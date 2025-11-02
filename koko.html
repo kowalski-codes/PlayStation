@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Templates Dashboard</title>
+<style>
+body {
+margin: 0;
+font-family: Arial, sans-serif;
+background: #000000;
+color: #FFFFFF;
+height: 100vh;
+display: flex;
+}
+
+/* LEFT PANEL */
+.sidebar {
+width: 25%;
+background: #000000;
+border-right: 2px solid #ccc;
+display: flex;
+flex-direction: column;
+}
+
+.clock-section, .notepad-section {
+background: #000000;
+padding: 15px;
+border-bottom: 2px solid #ccc;
+text-color: #FFFFFF;
+text-align: center;
+font-size: 20px;
+}
+
+.clock-section h2, .notepad-section h2 {
+background: #000000;
+margin-top: 0;
+text-align: center;
+text-color: #FFFFFF;
+}
+
+#ph-clock, #uk-clock {
+background: #000000;
+text-align: center;
+font-size: 18px;
+margin: 5px 0;
+}
+
+textarea {
+width: 93%;
+height: 400px;
+resize: none;
+font-size: 14px;
+padding: 10px;
+border-radius: 6px;
+border: 1px solid #aaa;
+background: #FFFFFF;
+color: #000000;
+}
+
+/* RIGHT PANEL */
+.main-content {
+flex: 1;
+display: flex;
+flex-direction: column;
+padding: 20px;
+background: #000000;
+}
+
+.top-bar {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 15px;
+background: #000000;
+}
+
+#searchBar {
+width: 75%;
+padding: 10px;
+font-size: 16px;
+border: 1px solid #ccc;
+border-radius: 8px;
+background: #000000;
+color: white;
+}
+
+.add-btn {
+padding: 10px 15px;
+background: #28a745;
+color: white;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+font-weight: bold;
+}
+.add-btn:hover { background: #218838; }
+
+.templates {
+background: #000000;
+flex: 1;
+border-radius: 10px;
+box-shadow: 0 0 10px rgba(0,0,0,0.1);
+padding: 15px;
+overflow-y: auto;
+}
+
+.template {
+position: relative;
+margin-bottom: 20px;
+border-bottom: 1px solid #ddd;
+padding-bottom: 10px;
+}
+
+.template h3 {
+margin-top: 0;
+}
+
+code {
+display: block;
+background: black;
+color: white;
+padding: 10px;
+border-radius: 5px;
+white-space: pre-wrap;
+}
+
+.action-btn {
+margin-right: 5px;
+background: #007bff;
+color: white;
+border: none;
+padding: 6px 10px;
+border-radius: 5px;
+cursor: pointer;
+font-size: 12px;
+transition: 0.2s;
+}
+
+.action-btn:hover { opacity: 0.85; }
+.edit-btn { background: #ffc107; color: #000; }
+.delete-btn { background: #dc3545; }
+.copied { background: #28a745 !important; }
+
+/* MODAL POP-UP */
+.modal {
+display: none;
+position: fixed;
+z-index: 1000;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.5);
+justify-content: center;
+align-items: center;
+}
+
+.modal-content {
+background: black;
+padding: 20px;
+border-radius: 10px;
+width: 400px;
+box-shadow: 0 0 10px rgba(0,0,0,0.3);
+display: flex;
+flex-direction: column;
+}
+
+.modal-content h2 {
+margin-top: 0;
+text-align: center;
+}
+
+.modal-content input, .modal-content textarea {
+margin-bottom: 10px;
+padding: 10px;
+border-radius: 5px;
+border: 1px solid #ccc;
+font-size: 14px;
+text-color: #FFFFFF;
+}
+
+.modal-buttons {
+display: flex;
+justify-content: space-between;
+}
+
+.btn {
+padding: 10px 15px;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+}
+
+.save-btn { background: #28a745; color: white; }
+.cancel-btn { background: #dc3545; color: white; }
+.save-btn:hover { background: #218838; }
+.cancel-btn:hover { background: #b02a37; }
+
+</style>
+</head>
+<body>
+<!-- LEFT SIDEBAR -->
+<div class="sidebar">
+<div class="clock-section">
+<h1>PH: <span id="ph-clock" style="font-size: inherit;">--:--:--</span></h1>
+<h1>UK: <span id="uk-clock" style="font-size: inherit;">--:--:--</span></h1>
+</div>
+<div class="notepad-section">
+<h2>📝 Notepad</h2>
+<textarea id="notepad" placeholder="Write notes here..."></textarea>
+</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+<div class="top-bar">
+<input type="text" id="searchBar" placeholder="Search templates...">
+<button class="add-btn" id="openModal">Add New</button>
+</div>
+
+<div class="templates" id="templateList"></div>
+</div>
+
+<!-- POP-UP MODAL -->
+<div class="modal" id="templateModal">
+<div class="modal-content">
+<h2 id="modalTitle">Add New Template</h2>
+<input type="text" id="templateTitle" placeholder="Template Title">
+<textarea id="templateContent" rows="6" placeholder="Template content here..."></textarea>
+<div class="modal-buttons">
+<button class="btn save-btn" id="saveTemplate">Save</button>
+<button class="btn cancel-btn" id="closeModal">Cancel</button>
+</div>
+</div>
+</div>
+
+<script>
+// CLOCKS
+function updateClocks() {
+const now = new Date();
+const ph = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+const uk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/London" }));
+document.getElementById("ph-clock").textContent = ph.toLocaleTimeString();
+document.getElementById("uk-clock").textContent = uk.toLocaleTimeString();
+}
+setInterval(updateClocks, 1000); updateClocks();
+
+// NOTEPAD
+const notepad = document.getElementById("notepad");
+notepad.value = localStorage.getItem("notes") || "";
+notepad.addEventListener("input", () => localStorage.setItem("notes", notepad.value));
+
+// TEMPLATES
+const templateList = document.getElementById("templateList");
+let templates = JSON.parse(localStorage.getItem("templates") || "[]");
+let editIndex = null;
+
+function renderTemplates() {
+templateList.innerHTML = "";
+templates.forEach((t, i) => {
+const div = document.createElement("div");
+div.className = "template";
+div.innerHTML = `
+         <div style="position:absolute; top:5px; right:5px;">
+           <button class="action-btn copy-btn">Copy</button>
+           <button class="action-btn edit-btn">Edit</button>
+           <button class="action-btn delete-btn">Delete</button>
+         </div>
+         <h3>${t.title}</h3>
+         <code>${t.content}</code>
+       `;
+
+// Copy
+div.querySelector(".copy-btn").addEventListener("click", () => {
+navigator.clipboard.writeText(t.content);
+const btn = div.querySelector(".copy-btn");
+btn.textContent = "Copied!";
+btn.classList.add("copied");
+setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
+});
+
+// Edit
+div.querySelector(".edit-btn").addEventListener("click", () => {
+editIndex = i;
+document.getElementById("modalTitle").textContent = "Edit Template";
+document.getElementById("templateTitle").value = t.title;
+document.getElementById("templateContent").value = t.content;
+modal.style.display = "flex";
+});
+
+// Delete
+div.querySelector(".delete-btn").addEventListener("click", () => {
+if (confirm(`Delete template "${t.title}"?`)) {
+templates.splice(i, 1);
+localStorage.setItem("templates", JSON.stringify(templates));
+renderTemplates();
+}
+});
+
+templateList.appendChild(div);
+});
+}
+renderTemplates();
+
+// SEARCH
+document.getElementById("searchBar").addEventListener("input", e => {
+const filter = e.target.value.toLowerCase();
+document.querySelectorAll(".template").forEach(t => {
+const text = t.innerText.toLowerCase();
+t.style.display = text.includes(filter) ? "block" : "none";
+});
+});
+
+// MODAL HANDLING
+const modal = document.getElementById("templateModal");
+document.getElementById("openModal").onclick = () => {
+editIndex = null;
+document.getElementById("modalTitle").textContent = "Add New Template";
+document.getElementById("templateTitle").value = "";
+document.getElementById("templateContent").value = "";
+modal.style.display = "flex";
+};
+document.getElementById("closeModal").onclick = () => modal.style.display = "none";
+window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
+// SAVE (Add or Edit)
+document.getElementById("saveTemplate").onclick = () => {
+const title = document.getElementById("templateTitle").value.trim();
+const content = document.getElementById("templateContent").value.trim();
+if (!title || !content) return alert("Please fill in both fields!");
+
+if (editIndex !== null) {
+templates[editIndex] = { title, content };
+} else {
+templates.push({ title, content });
+}
+
+      localStorage.setItem("templates", JSON.stringify(templates));
+      fetch("http://localhost:3000/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(templates)
+        }
+           );
+renderTemplates();
+modal.style.display = "none";
+};
+</script>
+</body>
+</html>
