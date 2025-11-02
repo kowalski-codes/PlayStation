@@ -253,7 +253,7 @@ notepad.addEventListener("input", () => localStorage.setItem("notes", notepad.va
 
 // TEMPLATES
 const templateList = document.getElementById("templateList");
-let templates = JSON.parse(localStorage.getItem("templates") || "[]");
+let templates = JSON.parse(localStorage.getItem("http://localhost:3000/templates") || "[]");
 let editIndex = null;
 
 function renderTemplates() {
