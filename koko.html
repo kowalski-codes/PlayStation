@@ -43,6 +43,18 @@
       display: block;
       white-space: pre-wrap;
     }
+    #searchBar {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -61,6 +73,8 @@
 
   <div class="templates">
     <h2>Email Templates</h2>
+
+    <input type="text" id="searchBar" placeholder="Search templates...">
 
     <div class="template">
       <h3>Payment Confirmation</h3>
@@ -84,9 +98,47 @@ Thank you,
 [Your Name]
       </code>
     </div>
+
+    <div class="template">
+      <h3>Job Application</h3>
+      <code>
+Dear Hiring Manager,
+
+I’m writing to express my interest in the [position name] role. Please find my resume attached.
+
+Best regards,
+[Your Name]
+      </code>
+    </div>
   </div>
 
   <script>
+    // CLOCK FUNCTION
     function updateClocks() {
       const now = new Date();
-      const phTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }))
+      const phTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+      const ukTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/London" }));
+
+      document.getElementById("ph-clock").textContent = phTime.toLocaleTimeString();
+      document.getElementById("uk-clock").textContent = ukTime.toLocaleTimeString();
+
+      const diffHours = Math.round((phTime - ukTime) / (1000 * 60 * 60));
+      document.title = `PH-UK Time Diff: ${diffHours} hrs`;
+    }
+    setInterval(updateClocks, 1000);
+    updateClocks();
+
+    // SEARCH FUNCTION
+    const searchBar = document.getElementById("searchBar");
+    searchBar.addEventListener("input", function() {
+      const filter = searchBar.value.toLowerCase();
+      const templates = document.querySelectorAll(".template");
+
+      templates.forEach(t => {
+        const text = t.innerText.toLowerCase();
+        t.classList.toggle("hidden", !text.includes(filter));
+      });
+    });
+  </script>
+</body>
+</html>
