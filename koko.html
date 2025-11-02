@@ -36,6 +36,7 @@
     }
     .template {
       margin-bottom: 20px;
+      position: relative;
     }
     code {
       background: #eee;
@@ -54,6 +55,25 @@
     }
     .hidden {
       display: none;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: 0.2s;
+    }
+    .copy-btn:hover {
+      background: #0056b3;
+    }
+    .copied {
+      background: #28a745 !important;
     }
   </style>
 </head>
@@ -77,6 +97,7 @@
     <input type="text" id="searchBar" placeholder="Search templates...">
 
     <div class="template">
+      <button class="copy-btn">Copy</button>
       <h3>Payment Confirmation</h3>
       <code>
 Good 000000,
@@ -88,6 +109,7 @@ Kindly find the attached documents/screenshots for your reference.
     </div>
 
     <div class="template">
+      <button class="copy-btn">Copy</button>
       <h3>Follow-up Email</h3>
       <code>
 Hi [Name],
@@ -100,6 +122,7 @@ Thank you,
     </div>
 
     <div class="template">
+      <button class="copy-btn">Copy</button>
       <h3>Job Application</h3>
       <code>
 Dear Hiring Manager,
@@ -133,10 +156,24 @@ Best regards,
     searchBar.addEventListener("input", function() {
       const filter = searchBar.value.toLowerCase();
       const templates = document.querySelectorAll(".template");
-
       templates.forEach(t => {
         const text = t.innerText.toLowerCase();
         t.classList.toggle("hidden", !text.includes(filter));
+      });
+    });
+
+    // COPY BUTTON FUNCTION
+    document.querySelectorAll(".copy-btn").forEach(button => {
+      button.addEventListener("click", () => {
+        const codeText = button.nextElementSibling.nextElementSibling.innerText.trim();
+        navigator.clipboard.writeText(codeText).then(() => {
+          button.textContent = "Copied!";
+          button.classList.add("copied");
+          setTimeout(() => {
+            button.textContent = "Copy";
+            button.classList.remove("copied");
+          }, 1500);
+        });
       });
     });
   </script>
