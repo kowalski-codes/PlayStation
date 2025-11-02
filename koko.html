@@ -233,112 +233,143 @@
       </div>
     </div>
   </div>
+<script>
+  const API = "http://localhost:3000"; // your local server URL
 
-  <script>
-    // CLOCKS
-    function updateClocks() {
-      const now = new Date();
-      const ph = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-      const uk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/London" }));
-      document.getElementById("ph-clock").textContent = ph.toLocaleTimeString();
-      document.getElementById("uk-clock").textContent = uk.toLocaleTimeString();
-    }
-    setInterval(updateClocks, 1000); updateClocks();
+  // CLOCKS
+  function updateClocks() {
+    const now = new Date();
+    const ph = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+    const uk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/London" }));
+    document.getElementById("ph-clock").textContent = ph.toLocaleTimeString();
+    document.getElementById("uk-clock").textContent = uk.toLocaleTimeString();
+  }
+  setInterval(updateClocks, 1000); updateClocks();
 
-    // NOTEPAD
-    const notepad = document.getElementById("notepad");
-    notepad.value = localStorage.getItem("notes") || "";
-    notepad.addEventListener("input", () => localStorage.setItem("notes", notepad.value));
+  // --- NOTEPAD ---
+  const notepad = document.getElementById("notepad");
 
-    // TEMPLATES
-    const templateList = document.getElementById("templateList");
-    let templates = JSON.parse(localStorage.getItem("templates") || "[]");
-    let editIndex = null;
+  async function loadNotes() {
+    const res = await fetch(`${API}/notes`);
+    const data = await res.json();
+    notepad.value = data.text || "";
+  }
 
-    function renderTemplates() {
-      templateList.innerHTML = "";
-      templates.forEach((t, i) => {
-        const div = document.createElement("div");
-        div.className = "template";
-        div.innerHTML = `
-          <div style="position:absolute; top:5px; right:5px;">
-            <button class="action-btn copy-btn">Copy</button>
-            <button class="action-btn edit-btn">Edit</button>
-            <button class="action-btn delete-btn">Delete</button>
-          </div>
-          <h3>${t.title}</h3>
-          <code>${t.content}</code>
-        `;
-
-        // Copy
-        div.querySelector(".copy-btn").addEventListener("click", () => {
-          navigator.clipboard.writeText(t.content);
-          const btn = div.querySelector(".copy-btn");
-          btn.textContent = "Copied!";
-          btn.classList.add("copied");
-          setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
-        });
-
-        // Edit
-        div.querySelector(".edit-btn").addEventListener("click", () => {
-          editIndex = i;
-          document.getElementById("modalTitle").textContent = "Edit Template";
-          document.getElementById("templateTitle").value = t.title;
-          document.getElementById("templateContent").value = t.content;
-          modal.style.display = "flex";
-        });
-
-        // Delete
-        div.querySelector(".delete-btn").addEventListener("click", () => {
-          if (confirm(`Delete template "${t.title}"?`)) {
-            templates.splice(i, 1);
-            localStorage.setItem("templates", JSON.stringify(templates));
-            renderTemplates();
-          }
-        });
-
-        templateList.appendChild(div);
-      });
-    }
-    renderTemplates();
-
-    // SEARCH
-    document.getElementById("searchBar").addEventListener("input", e => {
-      const filter = e.target.value.toLowerCase();
-      document.querySelectorAll(".template").forEach(t => {
-        const text = t.innerText.toLowerCase();
-        t.style.display = text.includes(filter) ? "block" : "none";
-      });
+  notepad.addEventListener("input", async () => {
+    await fetch(`${API}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: notepad.value })
     });
+  });
 
-    // MODAL HANDLING
-    const modal = document.getElementById("templateModal");
-    document.getElementById("openModal").onclick = () => {
-      editIndex = null;
-      document.getElementById("modalTitle").textContent = "Add New Template";
-      document.getElementById("templateTitle").value = "";
-      document.getElementById("templateContent").value = "";
-      modal.style.display = "flex";
-    };
-    document.getElementById("closeModal").onclick = () => modal.style.display = "none";
-    window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+  // --- TEMPLATES ---
+  const templateList = document.getElementById("templateList");
+  let templates = [];
+  let editIndex = null;
 
-    // SAVE (Add or Edit)
-    document.getElementById("saveTemplate").onclick = () => {
-      const title = document.getElementById("templateTitle").value.trim();
-      const content = document.getElementById("templateContent").value.trim();
-      if (!title || !content) return alert("Please fill in both fields!");
+  async function loadTemplates() {
+    const res = await fetch(`${API}/templates`);
+    templates = await res.json();
+    renderTemplates();
+  }
 
-      if (editIndex !== null) {
-        templates[editIndex] = { title, content };
-      } else {
-        templates.push({ title, content });
-      }
+  async function saveTemplates() {
+    await fetch(`${API}/templates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(templates)
+    });
+  }
 
-      localStorage.setItem("templates", JSON.stringify(templates));
-      renderTemplates();
-      modal.style.display = "none";
-    };
-  </script>
+  function renderTemplates() {
+    templateList.innerHTML = "";
+    templates.forEach((t, i) => {
+      const div = document.createElement("div");
+      div.className = "template";
+      div.innerHTML = `
+        <div style="position:absolute; top:5px; right:5px;">
+          <button class="action-btn copy-btn">Copy</button>
+          <button class="action-btn edit-btn">Edit</button>
+          <button class="action-btn delete-btn">Delete</button>
+        </div>
+        <h3>${t.title}</h3>
+        <code>${t.content}</code>
+      `;
+
+      // Copy
+      div.querySelector(".copy-btn").addEventListener("click", () => {
+        navigator.clipboard.writeText(t.content);
+        const btn = div.querySelector(".copy-btn");
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
+      });
+
+      // Edit
+      div.querySelector(".edit-btn").addEventListener("click", () => {
+        editIndex = i;
+        document.getElementById("modalTitle").textContent = "Edit Template";
+        document.getElementById("templateTitle").value = t.title;
+        document.getElementById("templateContent").value = t.content;
+        modal.style.display = "flex";
+      });
+
+      // Delete
+      div.querySelector(".delete-btn").addEventListener("click", async () => {
+        if (confirm(`Delete template "${t.title}"?`)) {
+          templates.splice(i, 1);
+          await saveTemplates();
+          renderTemplates();
+        }
+      });
+
+      templateList.appendChild(div);
+    });
+  }
+
+  // --- SEARCH ---
+  document.getElementById("searchBar").addEventListener("input", e => {
+    const filter = e.target.value.toLowerCase();
+    document.querySelectorAll(".template").forEach(t => {
+      const text = t.innerText.toLowerCase();
+      t.style.display = text.includes(filter) ? "block" : "none";
+    });
+  });
+
+  // --- MODAL ---
+  const modal = document.getElementById("templateModal");
+  document.getElementById("openModal").onclick = () => {
+    editIndex = null;
+    document.getElementById("modalTitle").textContent = "Add New Template";
+    document.getElementById("templateTitle").value = "";
+    document.getElementById("templateContent").value = "";
+    modal.style.display = "flex";
+  };
+  document.getElementById("closeModal").onclick = () => modal.style.display = "none";
+  window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
+  // --- SAVE TEMPLATE ---
+  document.getElementById("saveTemplate").onclick = async () => {
+    const title = document.getElementById("templateTitle").value.trim();
+    const content = document.getElementById("templateContent").value.trim();
+    if (!title || !content) return alert("Please fill in both fields!");
+
+    if (editIndex !== null) {
+      templates[editIndex] = { title, content };
+    } else {
+      templates.push({ title, content });
+    }
+
+    await saveTemplates();
+    renderTemplates();
+    modal.style.display = "none";
+  };
+
+  // --- INIT ---
+  loadNotes();
+  loadTemplates();
+</script>
+
 </body>
 </html>
